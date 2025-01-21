@@ -1,0 +1,88 @@
+name: Build RustDesk
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-rustdesk-windows:
+    name: Build RustDesk for Windows
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - target: x86_64-pc-windows-msvc
+            arch: x86_64
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.job.target }}
+          profile: minimal
+
+      - name: Install dependencies
+        run: |
+          choco install -y cmake
+          rustup target add ${{ matrix.job.target }}
+
+      - name: Build RustDesk
+        run: |
+          cargo build --release --target ${{ matrix.job.target }}
+
+      - name: Publish Windows artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rustdesk-windows-${{ matrix.job.arch }}
+          path: target/${{ matrix.job.target }}/release/
+
+  build-rustdesk-android:
+    name: Build RustDesk for Android
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - target: aarch64-linux-android
+            arch: arm64-v8a
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.job.target }}
+          profile: minimal
+
+      - name: Set up Android NDK
+        uses: android-actions/setup-ndk@v2
+        with:
+          ndk-version: r25b
+
+      - name: Install dependencies
+        run: |
+          rustup target add ${{ matrix.job.target }}
+          sudo apt-get update && sudo apt-get install -y openjdk-11-jdk
+
+      - name: Build RustDesk
+        run: |
+          export ANDROID_NDK_HOME=$ANDROID_NDK_ROOT
+          cargo ndk -t arm64-v8a -o ./target/release build --release
+
+      - name: Publish Android artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: rustdesk-android-${{ matrix.job.arch }}
+          path: target/release/
