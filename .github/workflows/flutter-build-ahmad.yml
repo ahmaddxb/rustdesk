@@ -1,4 +1,4 @@
-name: Build RustDesk
+name: Build RustDesk Ahmad
 
 on:
   push:
