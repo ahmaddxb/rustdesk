@@ -6,6 +6,11 @@ on:
       - main
   pull_request:
 
+  schedule:
+    # schedule build every night
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
 jobs:
   build-rustdesk-windows:
     name: Build RustDesk for Windows
